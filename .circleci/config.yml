@@ -27,7 +27,7 @@ jobs:
           command: mvn test
       - run:
           name: Analyze
-          command: mvn verify sonar:sonar -Dsonar.projectKey=raedbahri66_recipe_project
+          command: mvn verify sonar:sonar -Dsonar.projectKey=raedbahri66_spring5-mvc-rest
 
 
 # Invoke jobs via workflows
