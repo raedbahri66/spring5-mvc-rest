@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 @Service
 public class CustomerServiceImpl implements CustomerService {
 
+    public static final String API_V_1_CUSTOMERS = "/api/v1/customers/";
     private final CustomerRepository customerRepository;
     private final CustomerMapper customerMapper;
 
@@ -26,7 +27,7 @@ public class CustomerServiceImpl implements CustomerService {
                 .stream()
                 .map(customer -> {
                     CustomerDto customerDto = customerMapper.customerToCustomerDto(customer);
-                    customerDto.setCustomerUrl("/api/v1/customer/"+ customer.getId());
+                    customerDto.setCustomerUrl(API_V_1_CUSTOMERS+ customer.getId());
                     return customerDto;
                 })
                 .collect(Collectors.toList());
@@ -35,18 +36,49 @@ public class CustomerServiceImpl implements CustomerService {
     @Override
     public CustomerDto getCustomerById(Long id) {
         return customerMapper.customerToCustomerDto(customerRepository.
-                findById(id).orElseThrow(RuntimeException::new));
+                findById(id).orElseThrow(ResourceNotFoundException::new));
     }
 
     @Override
     public CustomerDto createNewCustomer(CustomerDto customerDto) {
-        Customer customer = customerMapper.customerDtoToCustomer(customerDto);
-        Customer customer1 = customerRepository.save(customer);
 
-        CustomerDto customerDto1 = customerMapper.customerToCustomerDto(customer1);
-        customerDto1.setCustomerUrl("/api/v1/customers/"+ customer1.getId());
+        return saveAndReturnDTO(customerMapper.customerDtoToCustomer(customerDto));
 
-        return customerDto1;
+    }
 
+    private CustomerDto saveAndReturnDTO(Customer customer) {
+        Customer savedCustomer = customerRepository.save(customer);
+
+        CustomerDto returnDto = customerMapper.customerToCustomerDto(savedCustomer);
+
+        returnDto.setCustomerUrl(API_V_1_CUSTOMERS+ savedCustomer.getId());
+
+        return returnDto;
+    }
+
+    @Override
+    public CustomerDto saveCustomerByDTO(Long id, CustomerDto customerDTO) {
+        Customer customer = customerMapper.customerDtoToCustomer(customerDTO);
+        customer.setId(id);
+
+        return saveAndReturnDTO(customer);
+    }
+
+    @Override
+    public CustomerDto patchCustomer(Long id, CustomerDto customerDTO) {
+        return customerRepository.findById(id).map(customer -> {
+            if (customerDTO.getFirstName() != null) {
+                customer.setFirstName(customerDTO.getFirstName());
+            }
+            if (customerDTO.getLastName() != null) {
+                customer.setFirstName(customerDTO.getLastName());
+            }
+            return customerMapper.customerToCustomerDto(customerRepository.save(customer));
+        }).orElseThrow(ResourceNotFoundException::new);
+    }
+
+    @Override
+    public void deleteCustomerById(Long id) {
+        customerRepository.deleteById(id);
     }
 }
